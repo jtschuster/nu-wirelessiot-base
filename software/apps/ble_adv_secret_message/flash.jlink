@@ -1,0 +1,5 @@
+r
+loadfile ble_adv_secret_message_sdk15_s140.hex 
+r
+g
+exit

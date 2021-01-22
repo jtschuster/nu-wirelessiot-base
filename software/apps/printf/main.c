@@ -6,29 +6,15 @@
 #include <stdint.h>
 #include <stdio.h>
 
-#include "app_error.h"
-#include "nrf.h"
 #include "nrf_delay.h"
-#include "nrfx_gpiote.h"
-#include "nrf_gpio.h"
-#include "nrf_log.h"
-#include "nrf_log_ctrl.h"
-#include "nrf_log_default_backends.h"
-#include "nrf_pwr_mgmt.h"
-#include "nrf_serial.h"
 
 #include "nrf52840dk.h"
 
 int main(void) {
-  ret_code_t error_code = NRF_SUCCESS;
-
+  
   nrf_gpio_cfg_output(LED1);
 
-  // initialize RTT library
-  error_code = NRF_LOG_INIT(NULL);
-  APP_ERROR_CHECK(error_code);
-  NRF_LOG_DEFAULT_BACKENDS_INIT();
-  printf("Log initialized!\n");
+  printf("Board started!\n");
 
   // loop forever
   uint32_t i = 0;

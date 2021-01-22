@@ -38,7 +38,6 @@ BOARD_SOURCES += \
 	app_uart.c\
 	app_util_platform.c\
 	before_startup.c\
-	ff.c\
 	hardfault_handler_gcc.c\
 	hardfault_implementation.c\
 	nrf_assert.c\
