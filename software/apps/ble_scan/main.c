@@ -32,8 +32,10 @@ void ble_evt_adv_report(ble_evt_t const* p_ble_evt) {
   uint8_t const* ble_addr = adv_report->peer_addr.addr; // array of 6 bytes of the address
   uint8_t* adv_buf = adv_report->data.p_data; // array of up to 31 bytes of advertisement payload data
   uint16_t adv_len = adv_report->data.len; // length of advertisement payload data
-
-  printf("Received an advertisement!\n");
+  for (uint8_t i = 0; i < adv_len; i++) {
+    printf("adv_buf[%d]: %hx", i, adv_buf[i]);
+  }
+  printf("Received an advertisement!asdf\n");
 }
 
 
