@@ -31,7 +31,7 @@ simple_ble_app_t* simple_ble_app;
 int main(void) {
   
   printf("Board started. Initializing BLE: \n");
-
+ 
   // Setup BLE
   // Note: simple BLE is our own library. You can find it in `nrf5x-base/lib/simple_ble/`
   simple_ble_app = simple_ble_init(&ble_config);
