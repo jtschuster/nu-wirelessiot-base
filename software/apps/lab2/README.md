@@ -1,4 +1,6 @@
 # Lab2: BLE advertisements
+### Github Code:
+https://github.com/jtschuster/nu-wirelessiot-base/tree/main/software/apps/lab2
 
 ## Scanning Application
 In ble_scan, I implemented a few filters, one that searches for the name field, one that filters on the peer address, and one that filters on the EddyStone marker being present.
