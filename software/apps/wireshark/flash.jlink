@@ -1,0 +1,5 @@
+r
+loadfile sniffer_nrf52840dk_nrf52840_7cc811f.hex 
+r
+g
+exit
