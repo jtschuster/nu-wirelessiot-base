@@ -1,6 +1,10 @@
 # Lab 3 - Connections
 
-### Code at https://github.com/jtschuster/nu-wirelessiot-base/tree/main/software/apps/lab3_connections and https://github.com/jtschuster/nu-wirelessiot-base/tree/main/software/apps/lab3_ble_ess_example
+### Code at 
+
+`github.com/jtschuster/nu-wirelessiot-base/tree/main/software/apps/lab3_connections`
+
+`github.com/jtschuster/nu-wirelessiot-base/tree/main/software/apps/lab3_ble_ess_example`
 
 
 1. Wireshark. 
