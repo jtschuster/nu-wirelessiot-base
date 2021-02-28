@@ -11,7 +11,7 @@
             "cStandard": "gnu17",
             "cppStandard": "gnu++14",
             "intelliSenseMode": "gcc-arm",
-            "compileCommands": "${workspaceFolder}/software/apps/blink/compile_commands.json"
+            "compileCommands": "${workspaceFolder}/software/apps/proj_scan/compile_commands.json"
         }
     ],
     "version": 4

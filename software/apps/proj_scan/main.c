@@ -3,8 +3,8 @@
 // Receives BLE advertisements
 
 #include "app_timer.h"
-#include "ble_advertising.h"
 #include "simple_ble.h"
+#include "ble_advertising.h"
 
 #include <stdbool.h>
 #include <stdint.h>
@@ -13,24 +13,25 @@
 
 #include "nrf52840dk.h"
 
+void blink(uint32_t led) {
+    static uint32_t last_call = 0;
+    static uint32_t now;
+    
+    now = app_timer_cnt_get();
+    printf("\nnow, last, diff: %ld, %ld, %ld\n", now, last_call, now-last_call);
+    if (now - last_call >= 5000) {
+        nrf_gpio_pin_toggle(led);
+        last_call = now;    
+    }
+}
 
-#define MESH_MESSAGE_OFFSET 10
-uint8_t ble_data[BLE_GAP_ADV_SET_DATA_SIZE_MAX] = {
-    2, 0x01,
-    6, 0x06, 0x09, 'R', 'E', 'L', 'A', 'Y',
-    5, 0x2A, 0, 0, 0, 0
-};
-
-// Intervals for advertising and connections
-#define ADV_INTERVAL 20 // min 20 ms
-int BLE_ADV_TIMEOUT = ADV_INTERVAL * 8.5 / 10; // units of 10 ms
-int TX_POWER_LEVEL = 0;
-int APP_ADV_INTERVAL = MSEC_TO_UNITS(ADV_INTERVAL, UNIT_0_625_MS);
+// BLE configuration
+// This is mostly irrelevant since we are scanning only
 static simple_ble_config_t ble_config = {
     // BLE address is c0:98:e5:4e:00:02
     .platform_id = 0x4E, // used as 4th octet in device BLE address
-    .device_id = 0xBEEF, // used as the 5th and 6th octet in the device BLE address, you will need to change this for each device you have
-    .adv_name = "RELAY",
+    .device_id = 0xBEAF, // used as the 5th and 6th octet in the device BLE address, you will need to change this for each device you have
+    .adv_name = "CS397/497_2", // irrelevant in this example
     .adv_interval = MSEC_TO_UNITS(1000, UNIT_0_625_MS), // send a packet once per second (minimum is 20 ms)
     .min_conn_interval = MSEC_TO_UNITS(500, UNIT_1_25_MS), // irrelevant if advertising only
     .max_conn_interval = MSEC_TO_UNITS(1000, UNIT_1_25_MS), // irrelevant if advertising only
@@ -43,8 +44,8 @@ uint8_t print_ble_field(uint8_t* data_buff, uint8_t index)
     printf("length of field: %d\n", field_len);
     switch (data_buff[index + 1]) {
     case 0x01:
-        printf("field type: flags (0x01)");
-        printf("%hx", data_buff[index + 2]);
+        printf("field type: flags (0x01)\n");
+        printf("%hx\n", data_buff[index + 2]);
         return index + 1 + field_len;
 
     case 0x09:
@@ -70,7 +71,7 @@ uint8_t print_ble_field(uint8_t* data_buff, uint8_t index)
 void print_ble_adv_fields(uint8_t* data_buff, uint8_t length)
 {
     uint8_t index = 0;
-    while (index < length) {
+    while (index < length-1) {
         index = print_ble_field(data_buff, index);
     }
     return;
@@ -103,45 +104,24 @@ void ble_evt_adv_report(ble_evt_t const* p_ble_evt)
     uint16_t device_id = adv_report->peer_addr.addr[0] | (adv_report->peer_addr.addr[1] << 8);
     for (int i = 0; i < 6; i++) {
         peer_address[i] = adv_report->peer_addr.addr[i];
-        device_id |= adv_report->peer_addr.addr[i] << (8 * i);
+        device_id |= adv_report->peer_addr.addr[i] << (8*i);
     }
-
-    // printf("peer address : %2X \n", device_id);
+    // printf("device id : %2X \n", device_id);
     uint8_t name_offset = field_start(adv_buf, 0x09, adv_len);
     for (int i = 0; i < adv_buf[name_offset - 1]; i++) {
         name[i] = adv_buf[name_offset + 1 + i];
     }
-
-    uint8_t message_offset = field_start(adv_buf, 0x2A, adv_len);
-    uint8_t message_len = adv_buf[message_offset-1];
-    uint8_t message[31] = {0};
-    for (int i = 0; i < message_len; i++) {
-        message[i] = adv_buf[message_offset + 1 + i];
-    }
-    
-
-
-    if (device_id == 0xCAFE) {
-        printf("This is my root device: CAFE\nlen: %d, data \n", adv_len, adv_len, adv_buf);
-        for (uint8_t i = 0; i < adv_len; i++) {
+    if (/*device_id == 0xCAFE ||*/ device_id == 0xBEEF) {
+        printf("This is my device %4x\n", device_id);
+        blink(LED1);
+        // print_ble_adv_fields(adv_buf, adv_len);
+        for(uint8_t i = 0; i < adv_len; i++) {
             printf("0x%02x, ", adv_buf[i]);
         }
         printf("\n\n");
-        memcpy(ble_data + MESH_MESSAGE_OFFSET, adv_buf + message_offset-1, message_len+1);
-        printf("my data: \n");
-        for (uint8_t i = 0; i < 31; i++) {
-            printf("0x%02x, ", ble_data[i]);
-        }
-        printf("\n\n");
-        advertising_stop();
-        copy_adv_data(ble_data, message_len + 11);
-        advertising_start();
-        simple_ble_adv_raw(ble_data, 31);
-        advertising_start();
-
-        // print_ble_adv_fields(adv_buf, adv_len);
     }
 }
+
 
 int main(void)
 {
@@ -150,10 +130,7 @@ int main(void)
     // Setup BLE
     // Note: simple BLE is our own library. You can find it in `nrf5x-base/lib/simple_ble/`
     simple_ble_app = simple_ble_init(&ble_config);
-    // Start Advertising
-
-    simple_ble_adv_raw(ble_data, 16);
-    advertising_start();
+    advertising_stop();
     // Start scanning
     scanning_start();
     // go into low power mode
