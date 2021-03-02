@@ -12,13 +12,19 @@
 #include <string.h>
 
 #include "nrf52840dk.h"
-
+#include "ring_buffer.h"
 
 #define MESH_MESSAGE_OFFSET 10
-uint8_t ble_data[BLE_GAP_ADV_SET_DATA_SIZE_MAX] = {
+static uint8_t ble_data[BLE_GAP_ADV_SET_DATA_SIZE_MAX] = {
     2, 0x01,
     6, 0x06, 0x09, 'R', 'E', 'L', 'A', 'Y',
     5, 0x2A, 0, 0, 0, 0
+};
+
+static queue_t adv_queue = {
+    .data = { 0 },
+    .head = 0,
+    .tail = 0,
 };
 
 // Intervals for advertising and connections
@@ -36,45 +42,6 @@ static simple_ble_config_t ble_config = {
     .max_conn_interval = MSEC_TO_UNITS(1000, UNIT_1_25_MS), // irrelevant if advertising only
 };
 simple_ble_app_t* simple_ble_app;
-
-uint8_t print_ble_field(uint8_t* data_buff, uint8_t index)
-{
-    uint8_t field_len = data_buff[index];
-    printf("length of field: %d\n", field_len);
-    switch (data_buff[index + 1]) {
-    case 0x01:
-        printf("field type: flags (0x01)");
-        printf("%hx", data_buff[index + 2]);
-        return index + 1 + field_len;
-
-    case 0x09:
-        printf("field type: local_name\n\t");
-        printf("%.*s\n", field_len - 1, (char*)data_buff + index + 2);
-        return index + 1 + field_len;
-
-    case 0x24:
-        printf("field type: URI (0x24)\n\t");
-        printf("%.*s", field_len - 1, (char*)data_buff + index + 2);
-        return index + 1 + field_len;
-
-    default:
-        printf("Field type: %hx\n\t", data_buff[index + 1]);
-        uint8_t i = 2;
-        for (; i < field_len; i++) {
-            printf("%hx, ", data_buff[index + i]);
-        }
-        return i;
-    }
-}
-
-void print_ble_adv_fields(uint8_t* data_buff, uint8_t length)
-{
-    uint8_t index = 0;
-    while (index < length) {
-        index = print_ble_field(data_buff, index);
-    }
-    return;
-}
 
 uint8_t field_start(uint8_t* data_buff, uint8_t type_flag, uint8_t length)
 {
@@ -139,7 +106,6 @@ void ble_evt_adv_report(ble_evt_t const* p_ble_evt)
         simple_ble_adv_raw(ble_data, 31);
         advertising_start();
 
-        // print_ble_adv_fields(adv_buf, adv_len);
     }
 }
 
