@@ -64,32 +64,30 @@ void ble_evt_adv_report(ble_evt_t const* p_ble_evt)
     // uint8_t const* ble_addr = adv_report->peer_addr.addr; // array of 6 bytes of the address
     uint8_t* adv_buf = adv_report->data.p_data; // array of up to 31 bytes of advertisement payload data
     uint16_t adv_len = adv_report->data.len; // length of advertisement payload data
-    char name[31] = { 0 };
+    
 
-    char peer_address[6] = { 0 };
     uint16_t device_id = adv_report->peer_addr.addr[0] | (adv_report->peer_addr.addr[1] << 8);
-    for (int i = 0; i < 6; i++) {
-        peer_address[i] = adv_report->peer_addr.addr[i];
+    for (int i = 0; i < 2; i++) {
         device_id |= adv_report->peer_addr.addr[i] << (8 * i);
     }
 
-    // printf("peer address : %2X \n", device_id);
-    uint8_t name_offset = field_start(adv_buf, 0x09, adv_len);
-    for (int i = 0; i < adv_buf[name_offset - 1]; i++) {
-        name[i] = adv_buf[name_offset + 1 + i];
-    }
+    // uint8_t name_offset = field_start(adv_buf, 0x09, adv_len);
+    // char name[31] = { 0 };
+    // for (int i = 0; i < adv_buf[name_offset - 1]; i++) {
+    //     name[i] = adv_buf[name_offset + 1 + i];
+    // }
 
     uint8_t message_offset = field_start(adv_buf, 0x2A, adv_len);
     uint8_t message_len = adv_buf[message_offset-1];
-    uint8_t message[31] = {0};
-    for (int i = 0; i < message_len; i++) {
-        message[i] = adv_buf[message_offset + 1 + i];
-    }
+    // uint8_t message[31] = {0};
+    // for (int i = 0; i < message_len; i++) {
+    //     message[i] = adv_buf[message_offset + 1 + i];
+    // }
     
 
-
+    
     if (device_id == 0xCAFE) {
-        printf("This is my root device: CAFE\nlen: %d, data \n", adv_len, adv_len, adv_buf);
+        printf("This is my root device: CAFE\nlen: %d, data %.*s\n", adv_len, adv_len, adv_buf);
         for (uint8_t i = 0; i < adv_len; i++) {
             printf("0x%02x, ", adv_buf[i]);
         }
