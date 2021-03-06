@@ -11,6 +11,8 @@ REPO_HEADER_PATHS += $(NRF_BASE_DIR)/lib/
 REPO_HEADER_PATHS += $(dir $(wildcard $(NRF_BASE_DIR)/drivers/*/))
 REPO_HEADER_PATHS += $(dir $(wildcard $(NRF_BASE_DIR)/lib/*/))
 REPO_HEADER_PATHS += $(dir $(wildcard $(NRF_BASE_DIR)/lib/simple_ble/*/))
+REPO_HEADER_PATHS += $(dir $(wildcard $(NRF_BASE_DIR)/lib/simple_mesh/*/))
+
 REPO_HEADER_PATHS += $(dir $(wildcard $(NRF_BASE_DIR)/lib/simple_logger/*/))
 REPO_HEADER_PATHS += $(dir $(wildcard $(NRF_BASE_DIR)/lib/simple_thread/*/))
 REPO_HEADER_PATHS += $(NRF_BASE_DIR)/lib/nanopb/
@@ -18,6 +20,8 @@ REPO_SOURCE_PATHS += $(NRF_BASE_DIR)/lib/
 REPO_SOURCE_PATHS += $(dir $(wildcard $(NRF_BASE_DIR)/drivers/*/))
 REPO_SOURCE_PATHS += $(dir $(wildcard $(NRF_BASE_DIR)/lib/*/))
 REPO_SOURCE_PATHS += $(dir $(wildcard $(NRF_BASE_DIR)/lib/simple_ble/*/))
+REPO_SOURCE_PATHS += $(dir $(wildcard $(NRF_BASE_DIR)/lib/simple_mesh/*/))
+
 REPO_SOURCE_PATHS += $(dir $(wildcard $(NRF_BASE_DIR)/lib/simple_logger/*/))
 REPO_SOURCE_PATHS += $(dir $(wildcard $(NRF_BASE_DIR)/lib/simple_thread/*/))
 REPO_SOURCE_PATHS += $(NRF_BASE_DIR)/lib/nanopb/
@@ -45,9 +49,9 @@ ifneq (,$(filter $(NRF_IC),nrf52832 nrf52840))
 
     # Set the path
     ifeq ($(USE_THREAD), 1)
-      SDK_ROOT = $(NRF_BASE_DIR)/sdk/nrf5_sdk_15.3.0_thread/
+      SDK_ROOT = $(NRF_BASE_DIR)sdk/nrf5_sdk_15.3.0_thread/
     else
-      SDK_ROOT = $(NRF_BASE_DIR)/sdk/nrf5_sdk_15.3.0/
+      SDK_ROOT = $(NRF_BASE_DIR)sdk/nrf5_sdk_15.3.0/
     endif
 
     MBR_PATH ?= $(SDK_ROOT)components/softdevice/mbr/$(NRF_IC)/hex/mbr_$(NRF_MODEL)_$(MBR_VERSION)_mbr.hex
@@ -805,7 +809,6 @@ SDK_DEFINES = $(addprefix -D,$(SDK_VARS)) $(addprefix -D,$(BOARD_VARS)) $(addpre
 
 # Directories make searches for prerequisites
 VPATH = $(SDK_SOURCE_PATHS) $(REPO_SOURCE_PATHS) $(BOARD_SOURCE_PATHS) $(APP_SOURCE_PATHS)
-
 SOURCES = $(notdir $(APP_SOURCES)) $(notdir $(BOARD_SOURCES)) $(notdir $(SDK_SOURCES)) $(notdir $(REPO_SOURCES))
 PBSRCS = $(filter %.proto,$(SOURCES))
 PBOPTS = $(filter %.options,$(SOURCES))

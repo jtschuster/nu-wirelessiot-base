@@ -5,8 +5,9 @@
 #include <stdbool.h>
 
 #include "app_timer.h"
-#include "ble_types.h"
 #include "ble_advdata.h"
+#include "ble_tps.h"
+#include "ble_types.h"
 
 /*******************************************************************************
  *   DEFINES
@@ -45,12 +46,13 @@
 #define CENTRAL_LINK_COUNT                  0                                           //!< Number of central links used by the application. When changing this number, remember to adjust the RAM settings.
 #define PERIPHERAL_LINK_COUNT               1                                           //!< Number of peripheral links used by the application. When changing this number, remember to adjust the RAM settings.
 
-#define APP_ADV_INTERVAL                    MSEC_TO_UNITS(300, UNIT_0_625_MS)
+
 
 #define MIN_CONN_INTERVAL                   MSEC_TO_UNITS(50, UNIT_1_25_MS)             //!< Minimum acceptable connection interval (50 ms). The connection interval uses 1.25 ms units.
 #define MAX_CONN_INTERVAL                   MSEC_TO_UNITS(100, UNIT_1_25_MS)            //!< Maximum acceptable connection interval (100 ms). The connection interval uses 1.25 ms units.
 #define NEXT_CONN_PARAMS_UPDATE_DELAY       APP_TIMER_TICKS(30000)                      //!< Time between each call to @ref sd_ble_gap_conn_param_update after the first call (30 seconds).
 #define MAX_CONN_PARAMS_UPDATE_COUNT        3                                           //!< Number of attempts before giving up the connection parameter negotiation.
+
 
 // Priority of the application BLE event handler.
 #define APP_BLE_OBSERVER_PRIO               3
@@ -62,8 +64,9 @@
 extern const int SLAVE_LATENCY;                       // 0                                           //!< Slave latency.
 extern const int CONN_SUP_TIMEOUT;                    // MSEC_TO_UNITS(4000, UNIT_10_MS)             //!< Connection supervision time-out (4 seconds). The supervision time-out uses 10 ms units.
 extern const int FIRST_CONN_PARAMS_UPDATE_DELAY;      // APP_TIMER_TICKS(5000)                       //!< Time from initiating an event (connection or start of notification) to the first time @ref sd_ble_gap_conn_param_update is called (5 seconds).
-
-
+extern int TX_POWER_LEVEL;
+extern int APP_ADV_INTERVAL;
+extern int BLE_ADV_TIMEOUT;
 /*******************************************************************************
  *   TYPE DEFINITIONS
  ******************************************************************************/
@@ -138,9 +141,10 @@ void advertising_stop(void);
 void scanning_start(void);
 // Softdevice-friendly sleep (WFE/WFI)
 void power_manage(void);
-
+// Set up tx power service
+void tps_init(void);
 // Call to initialize Simple BLE library
-simple_ble_app_t* simple_ble_init(const simple_ble_config_t* conf);
+simple_ble_app_t *simple_ble_init(const simple_ble_config_t *conf);
 
 // Standard service and characteristic creation
 void simple_ble_add_service(simple_ble_service_t* service_char);
@@ -289,4 +293,7 @@ void simple_ble_es_with_name(const char* url_str);
 #define PHYSWEB_URLEND_ORG      0x08    // .org
 #define PHYSWEB_URLEND_EDU      0x09    // .edu
 
+void copy_adv_data(uint8_t* buf, size_t len);
+
 #endif /*__SIMPLE_BLE_H */
+

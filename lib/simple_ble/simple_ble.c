@@ -61,6 +61,8 @@
 /*******************************************************************************
  *   STATIC AND GLOBAL VARIABLES
  ******************************************************************************/
+static int8_t tx_power = -40;
+
 static const simple_ble_config_t* ble_config;
 
 simple_ble_app_t app;
@@ -75,22 +77,34 @@ static ble_data_t m_scan_buffer = {
     .len = BLE_GAP_SCAN_BUFFER_MAX,
 };
 
+// static ble_tps_t m_tps = {
+//     .service_handle = ;           /**< Handle of TX Power Service (as provided by the BLE stack). */
+//     ble_gatts_char_handles_t  
+//     .tx_power_level_handles = ;   /**< Handles related to the TX Power Level characteristic. */
+//     uint16_t                  
+//     .conn_handle = ;              /**< Handle of the current connection (as provided by the BLE stack, is BLE_CONN_HANDLE_INVALID if not in a connection). */
+// };
+
 // Module instances
 // ATTENTION: Those also instanciate event handlers for BLE and SYS events
 NRF_BLE_GATT_DEF(m_gatt);                                                       /**< GATT module instance. */
 NRF_BLE_QWR_DEF(m_qwr);                                                         /**< Context for the Queued Write module.*/
-BLE_ADVERTISING_DEF(m_advertising);                                             /**< Advertising module instance. */
+BLE_ADVERTISING_DEF(m_advertising);                                             /**< Advertising module instance. */ // ble_advertising_t
 
 // Configuration settings that can be redefined by application
 __attribute__((weak)) const int SLAVE_LATENCY = 0;
 __attribute__((weak)) const int CONN_SUP_TIMEOUT = MSEC_TO_UNITS(4000, UNIT_10_MS);
 __attribute__((weak)) const int FIRST_CONN_PARAMS_UPDATE_DELAY = APP_TIMER_TICKS(5000);
+__attribute__((weak))  int BLE_ADV_TIMEOUT = 0;
+__attribute__((weak))  int TX_POWER_LEVEL = (0); /**< TX Power Level value. This will be set both in the TX Power service, in the advertising data, and also used to set the radio transmit power. */
+__attribute__((weak))  int APP_ADV_INTERVAL = MSEC_TO_UNITS(2000, UNIT_0_625_MS);
 
 #ifdef ENABLE_DFU
-static simple_ble_service_t dfu_service = {
-    .uuid128 =  {{0x23, 0xD1, 0xBC, 0xEA, 0x5F, 0x78, 0x23, 0x15,
-                  0xDE, 0xEF, 0x12, 0x12, 0x00, 0x00, 0x00, 0x00}},
-    .uuid_handle.uuid = BLE_DFU_SERVICE_UUID};
+    static simple_ble_service_t dfu_service = {
+        .uuid128 = { { 0x23, 0xD1, 0xBC, 0xEA, 0x5F, 0x78, 0x23, 0x15,
+            0xDE, 0xEF, 0x12, 0x12, 0x00, 0x00, 0x00, 0x00 } },
+        .uuid_handle.uuid = BLE_DFU_SERVICE_UUID
+    };
 
 static simple_ble_char_t    dfu_ctrlpt_char = {.uuid16 = BLE_DFU_CTRL_PT_UUID};
 
@@ -207,7 +221,7 @@ static void interrupts_disable(void) {
 #endif
 
 static void on_adv_evt(ble_adv_evt_t ble_adv_evt) {
-    // do nothing
+    // advertising_stop();
 }
 
 //static void on_pm_evt(pm_evt_t const* p_evt) {
@@ -653,7 +667,28 @@ void __attribute__((weak)) gap_params_init(void) {
 
     err_code = sd_ble_gap_ppcp_set(&gap_conn_params);
     APP_ERROR_CHECK(err_code);
+
+    // // Set TX Power
+    // err_code = sd_ble_gap_tx_power_set(69, 6969, TX_POWER_LEVEL);
+    // APP_ERROR_CHECK(err_code);
 }
+
+/**@brief Function for initializing the TX Power Service.
+ */
+// void tps_init(void)
+// {
+
+//     uint32_t       err_code;
+//     ble_tps_init_t tps_init_obj;
+
+//     memset(&tps_init_obj, 0, sizeof(tps_init_obj));
+//     tps_init_obj.initial_tx_power_level = TX_POWER_LEVEL;
+
+//     BLE_GAP_CONN_SEC_MODE_SET_OPEN(&tps_init_obj.tpl_rd_sec);
+
+//     err_code = ble_tps_init(&m_tps, &tps_init_obj);
+//     APP_ERROR_CHECK(err_code);
+// }
 
 // Initializing the GATT module.
 static void gatt_init(void)
@@ -666,6 +701,15 @@ static ble_uuid_t m_adv_uuids[] =                                               
 {
     {BLE_UUID_DEVICE_INFORMATION_SERVICE, BLE_UUID_TYPE_BLE}
 };
+
+/**@brief Function for changing the tx power.
+ */
+static void tx_power_set(void)
+{
+    ret_code_t err_code = sd_ble_gap_tx_power_set(BLE_GAP_TX_POWER_ROLE_ADV, m_advertising.adv_handle, TX_POWER_LEVEL);
+    APP_ERROR_CHECK(err_code);
+}
+
 void __attribute__((weak)) advertising_init(void) {
 
     //XXX: Copied from template app
@@ -679,16 +723,17 @@ void __attribute__((weak)) advertising_init(void) {
     init.advdata.flags                   = BLE_GAP_ADV_FLAGS_LE_ONLY_GENERAL_DISC_MODE;
     init.advdata.uuids_complete.uuid_cnt = sizeof(m_adv_uuids) / sizeof(m_adv_uuids[0]);
     init.advdata.uuids_complete.p_uuids  = m_adv_uuids;
+    init.advdata.p_tx_power_level = &tx_power;
 
     init.config.ble_adv_fast_enabled  = true;
     init.config.ble_adv_fast_interval = APP_ADV_INTERVAL;
-    init.config.ble_adv_fast_timeout  = 0;
+    init.config.ble_adv_fast_timeout  = BLE_ADV_TIMEOUT;
 
     init.evt_handler = on_adv_evt;
 
     err_code = ble_advertising_init(&m_advertising, &init);
     APP_ERROR_CHECK(err_code);
-
+    tx_power_set();
     ble_advertising_conn_cfg_tag_set(&m_advertising, APP_BLE_CONN_CFG_TAG);
 }
 
@@ -1221,7 +1266,6 @@ void simple_ble_adv_only_name(void) {
     // actually set advertisement
     err_code = sd_ble_gap_adv_set_configure(&m_advertising.adv_handle, &m_advertising.adv_data, &m_advertising.adv_params);
     APP_ERROR_CHECK(err_code);
-
     // Start the advertisement
     advertising_start();
 }
@@ -1303,7 +1347,7 @@ void simple_ble_adv_raw(uint8_t* buf, size_t len) {
     // clear scan response
     memset(m_advertising.adv_data.scan_rsp_data.p_data, 0, BLE_GAP_ADV_SET_DATA_SIZE_MAX);
     m_advertising.adv_data.scan_rsp_data.len = 0;
-
+    // m_advertising.adv_data.p_tx_power
     // actually set the advertisement
     err_code = sd_ble_gap_adv_set_configure(&m_advertising.adv_handle, &m_advertising.adv_data, &m_advertising.adv_params);
     APP_ERROR_CHECK(err_code);
@@ -1312,6 +1356,9 @@ void simple_ble_adv_raw(uint8_t* buf, size_t len) {
     advertising_start();
 }
 
+void copy_adv_data(uint8_t* buf, size_t len) {
+    memcpy(m_advertising.adv_data.adv_data.p_data, buf, len);
+}
 
 /*******************************************************************************
  *   EDDYSTONE
