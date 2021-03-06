@@ -111,7 +111,7 @@ void ble_evt_adv_report(ble_evt_t const* p_ble_evt)
     for (int i = 0; i < adv_buf[name_offset - 1]; i++) {
         name[i] = adv_buf[name_offset + 1 + i];
     }
-    if (/*device_id == 0xCAFE ||*/ device_id == 0xBEEF) {
+    if (device_id == 0xCAFE || device_id == 0xBEEF) {
         printf("This is my device %4x\n", device_id);
         blink(LED1);
         // print_ble_adv_fields(adv_buf, adv_len);
