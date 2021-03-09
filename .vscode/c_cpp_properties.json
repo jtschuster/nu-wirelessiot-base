@@ -8,10 +8,10 @@
             "defines": [],
             "macFrameworkPath": [],
             "compilerPath": "/usr/local/bin/arm-none-eabi-gcc",
-            "cStandard": "gnu17",
+            "cStandard": "c99",
             "cppStandard": "gnu++14",
-            "intelliSenseMode": "gcc-arm",
-            "compileCommands": "${workspaceFolder}/software/apps/proj_scan/compile_commands.json"
+            "intelliSenseMode": "macos-gcc-arm",
+            "compileCommands": "${workspaceFolder}/software/apps/proj_beef/compile_commands.json"
         }
     ],
     "version": 4
