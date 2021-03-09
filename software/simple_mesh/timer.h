@@ -27,6 +27,11 @@ void application_timers_start(uint32_t ms);
 #include "nrf52.h"
 #endif
 
+#define TICKS_TO_MS(_ticks)                                   \
+    ((uint32_t)ROUNDED_DIV(                                   \
+        (_ticks)*1000 * (APP_TIMER_CONFIG_RTC_FREQUENCY + 1), \
+        (uint64_t)APP_TIMER_CLOCK_FREQ))
+
 APP_TIMER_DEF(m_app_timer);
 APP_TIMER_DEF(m_mesh_timer);
 

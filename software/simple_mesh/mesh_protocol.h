@@ -15,10 +15,10 @@
 #define AD_LEN_OFFSET 0
 #define AD_MESH_TYPE_OFFSET 1
 
-#define ADV_INTERVAL 50 // min 20 ms
+#define ADV_INTERVAL 100 // min 20 ms
 // #define _BLE_ADV_TIMEOUT ((30 + 10) * 10.5 / 10) // units of 10 ms
-int BLE_ADV_TIMEOUT = ((ADV_INTERVAL + 10) * 8.5 / 10);
-#define MESH_MESSAGE_TIMER_TIMEOUT (BLE_ADV_TIMEOUT * 10 + 30)
+int BLE_ADV_TIMEOUT = ((ADV_INTERVAL + 10) * 9.5 /* /10 */); 
+#define MESH_MESSAGE_TIMER_TIMEOUT (BLE_ADV_TIMEOUT /* * 10 */ + 30)
 
 #define MAX_REVISION 255
 #define NEWER_REVISION(a, b) ((a - b > 0 && a - b < MAX_REVISION / 2) || b - a > MAX_REVISION / 2)
@@ -166,14 +166,16 @@ int8_t mesh_assemble_next_message(uint8_t* dest)
 static void broadcast_next_message()
 {
     if (mesh_assemble_next_message(ble_data) == 0) {
-        DEBUG_PRINT("about to %s reg %d = %d @ t=%ld\n", ble_data[REQ_FLAG_OFFSET] == 1 ? "request" : "send", ble_data[REG_NUM_OFFSET], ble_data[30], app_timer_cnt_get());
+        DEBUG_PRINT("about to %s reg %d = %d @ t=%ld\n", ble_data[REQ_FLAG_OFFSET] == 1 ? "request" : "send", ble_data[REG_NUM_OFFSET], ble_data[30], TICKS_TO_MS(app_timer_cnt_get()));
         m_broadcasting = 1;
         advertising_stop();
         copy_adv_data(ble_data, 31);
+        // simple_ble_adv_raw(ble_data, 31);
         advertising_start();
         mesh_timer_start(MESH_MESSAGE_TIMER_TIMEOUT);
     } else {
         DEBUG_PRINT("not sending yet\n");
+        advertising_stop();
         m_broadcasting = 0;
     }
 }
@@ -203,7 +205,7 @@ void mesh_write_reg(uint8_t reg_num, uint8_t* data, uint8_t revision)
     m_mesh_data.registers[reg_num][25] = 1;
     memcpy(m_mesh_data.registers[reg_num], data, 24);
     q_push(&(m_mesh_data.send_queue), reg_num);
-    DEBUG_PRINT("wrote reg %d = %d @ t=%ld\nbroadcasting currently? %d\n", reg_num, m_mesh_data.registers[reg_num][23], app_timer_cnt_get(), m_broadcasting);
+    DEBUG_PRINT("wrote reg %d = %d @ t=%ld\nbroadcasting currently? %d\n", reg_num, m_mesh_data.registers[reg_num][23], TICKS_TO_MS(app_timer_cnt_get()), m_broadcasting);
 
     if (!m_broadcasting) {
         broadcast_next_message();
@@ -214,7 +216,6 @@ void __attribute__((weak)) mesh_message_recv_callback();
 
 void ble_evt_adv_report(ble_evt_t const* p_ble_evt)
 {
-
     ble_gap_evt_adv_report_t const* adv_report = &(p_ble_evt->evt.gap_evt.params.adv_report);
     // uint8_t const* ble_addr = adv_report->peer_addr.addr; // array of 6 bytes of the address
     uint8_t* adv_buf = adv_report->data.p_data; // array of up to 31 bytes of advertisement payload data
@@ -245,7 +246,7 @@ void ble_evt_adv_report(ble_evt_t const* p_ble_evt)
                 if (mesh_message_recv_callback) {
                     mesh_message_recv_callback();
                 }
-            }
+            } 
         } else if (adv_buf[REQ_FLAG_OFFSET] == 1) {
             DEBUG_PRINT("Received a request to send register %d\n", reg_num);
             q_push(&(m_mesh_data.send_queue), reg_num);

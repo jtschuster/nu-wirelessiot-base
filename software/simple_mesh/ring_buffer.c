@@ -59,6 +59,7 @@ inline __attribute__((always_inline)) uint8_t q_pop(queue_t* q)
         if ((q->data[q->ptr >> 3] & (1 << (q->ptr & 0b111))) != 0) {
             q->data[q->ptr >> 3] &= ~(1 << (q->ptr & 0b111));
             q->ptr = (q->ptr + 1) % 256;
+            DEBUG_PRINT("popping %d from queue\n", q->ptr);
             return q->ptr;
         } else {
             q->ptr = (q->ptr + 1) % 256;
