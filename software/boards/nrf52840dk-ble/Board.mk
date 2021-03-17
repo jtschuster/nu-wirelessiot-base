@@ -71,6 +71,7 @@ BOARD_SOURCES += \
 	nrfx_ppi.c\
 	nrfx_prs.c\
 	nrfx_pwm.c\
+	nrfx_rtc.c\
 	nrfx_saadc.c\
 	nrfx_spi.c\
 	nrfx_spim.c\
@@ -79,6 +80,14 @@ BOARD_SOURCES += \
 	nrfx_twim.c\
 	nrfx_uart.c\
 	nrfx_uarte.c\
+	nrf_crypto_aes.c\
+	nrf_crypto_error.c\
+	nrf_crypto_init.c\
+	cc310_backend_aes.c\
+	cc310_backend_mutex.c\
+	cc310_backend_shared.c\
+	mem_manager.c\
+
 
 ifneq ($(SOFTDEVICE_MODEL),blank)
 BOARD_SOURCES += \
@@ -93,6 +102,8 @@ BOARD_SOURCES += \
 	simple_ble.c\
 
 endif
+
+LIBS += $(SDK_ROOT)external/nrf_cc310/lib/cortex-m4/hard-float/libnrf_cc310_0.9.12.a
 
 endif
 
