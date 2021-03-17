@@ -17,8 +17,8 @@
 
 #define ADV_INTERVAL 100 // min 20 ms
 // #define _BLE_ADV_TIMEOUT ((30 + 10) * 10.5 / 10) // units of 10 ms
-int BLE_ADV_TIMEOUT = ((ADV_INTERVAL + 10) * 9.5 /* /10 */); 
-#define MESH_MESSAGE_TIMER_TIMEOUT (BLE_ADV_TIMEOUT /* * 10 */ + 30)
+int BLE_ADV_TIMEOUT = ((ADV_INTERVAL + 10) * 9.5 / 10);
+#define MESH_MESSAGE_TIMER_TIMEOUT (BLE_ADV_TIMEOUT * 10 + 30)
 
 #define MAX_REVISION 255
 #define NEWER_REVISION(a, b) ((a - b > 0 && a - b < MAX_REVISION / 2) || b - a > MAX_REVISION / 2)
@@ -51,7 +51,7 @@ static mesh_data_t m_mesh_data = {
 
 // Intervals for advertising and connections
 
-int TX_POWER_LEVEL = -40;
+int TX_POWER_LEVEL = -20;
 int APP_ADV_INTERVAL = MSEC_TO_UNITS(ADV_INTERVAL, UNIT_0_625_MS);
 
 #ifndef DEVICE_ID
@@ -88,7 +88,7 @@ static int8_t mesh_copy_message(uint8_t* dest, uint8_t reg_num)
     // RFU / unused     6
     // Data             7:31
 
-    uint8_t tmp_header[7] = {0};
+    uint8_t tmp_header[7] = { 0 };
     // {
     //     30,
     //     0x2A,
@@ -165,9 +165,9 @@ int8_t mesh_assemble_next_message(uint8_t* dest)
 
 static void broadcast_next_message()
 {
+    m_broadcasting = 1;
     if (mesh_assemble_next_message(ble_data) == 0) {
         DEBUG_PRINT("about to %s reg %d = %d @ t=%ld\n", ble_data[REQ_FLAG_OFFSET] == 1 ? "request" : "send", ble_data[REG_NUM_OFFSET], ble_data[30], TICKS_TO_MS(app_timer_cnt_get()));
-        m_broadcasting = 1;
         advertising_stop();
         copy_adv_data(ble_data, 31);
         // simple_ble_adv_raw(ble_data, 31);
@@ -205,7 +205,8 @@ void mesh_write_reg(uint8_t reg_num, uint8_t* data, uint8_t revision)
     m_mesh_data.registers[reg_num][25] = 1;
     memcpy(m_mesh_data.registers[reg_num], data, 24);
     q_push(&(m_mesh_data.send_queue), reg_num);
-    DEBUG_PRINT("wrote reg %d = %d @ t=%ld\nbroadcasting currently? %d\n", reg_num, m_mesh_data.registers[reg_num][23], TICKS_TO_MS(app_timer_cnt_get()), m_broadcasting);
+    DEBUG_PRINT("wrote reg %d = %d @ t=%ld\nbroadcasting currently? %d\n",
+        reg_num, m_mesh_data.registers[reg_num][23], TICKS_TO_MS(app_timer_cnt_get()), m_broadcasting);
 
     if (!m_broadcasting) {
         broadcast_next_message();
@@ -233,20 +234,39 @@ void ble_evt_adv_report(ble_evt_t const* p_ble_evt)
             uint8_t reg_revision_message = adv_buf[REG_REVISION_OFFSET];
             uint8_t reg_revision_local = m_mesh_data.registers[reg_num][24];
             if (NEWER_REVISION(reg_revision_message, reg_revision_local) || m_mesh_data.registers[reg_num][25] == 0) {
+
                 if (reg_revision_message - reg_revision_local > 1 && (m_mesh_data.registers[reg_num][25] == 1)) {
-                    printf("we dropped a message!\n\tTotal drops: %d\n\tTotal recv: %d\n", ++drops, ++recv_count);
+                    drops++;
+                    recv_count++;
+#ifndef DEBUG__
+                    if (recv_count % 20 == 0) {
+#endif
+                        printf("we dropped a message!\n\tTotal drops: %d\n\tTotal recv: %d\n", drops, recv_count);
+#ifndef DEBUG__
+                    }
+#endif
                 } else {
-                    printf("we receieved a message from %lX!\n\tTotal drops: %d\n\tTotal recv: %d\n", device_id, drops, ++recv_count);
+                    recv_count++;
+#ifndef DEBUG__
+                    if (recv_count % 20 == 0) {
+#endif
+                        printf("we receieved a message from %X!\n\tTotal drops: %d\n\tTotal recv: %d\n", device_id, drops, recv_count);
+#ifndef DEBUG__
+                    }
+#endif
                 }
+
                 DEBUG_PRINT("it's a newer reg %d version\n", reg_num);
-                if (reg_num % 3 == 0 && device_id != 0xFEED || reg_num % 3 == 2 && device_id != 0xCAFE || reg_num % 3 == 1 && device_id != 0xBEEF) {
+                if ((reg_num % 3 == 0 && device_id != 0xFEED)
+                    || (reg_num % 3 == 2 && device_id != 0xCAFE)
+                    || (reg_num % 3 == 1 && device_id != 0xBEEF)) {
                     DEBUG_PRINT("but it's from %X\n", device_id);
                 }
                 mesh_write_reg(reg_num, adv_buf + REG_DATA_OFFSET, reg_revision_message);
                 if (mesh_message_recv_callback) {
                     mesh_message_recv_callback();
                 }
-            } 
+            }
         } else if (adv_buf[REQ_FLAG_OFFSET] == 1) {
             DEBUG_PRINT("Received a request to send register %d\n", reg_num);
             q_push(&(m_mesh_data.send_queue), reg_num);
