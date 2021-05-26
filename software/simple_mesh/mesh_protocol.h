@@ -147,7 +147,7 @@ void mesh_init()
     scanning_start();
 }
 
-int8_t mesh_assemble_next_message(uint8_t* dest)
+static int8_t mesh_assemble_next_message(uint8_t* dest)
 {
     DEBUG_PRINT("Assembling. Here is send_queue:\n\t");
     q_print_status(&(m_mesh_data.send_queue));
@@ -180,7 +180,7 @@ static void broadcast_next_message()
     }
 }
 
-void mesh_timer_timeout_handler(void* p_context)
+static void mesh_timer_timeout_handler(void* p_context)
 {
     UNUSED_PARAMETER(p_context);
     broadcast_next_message();
@@ -317,20 +317,6 @@ typedef struct mesh_message_s {
 void mesh_write_reg(mesh_data_t* mesh_data, uint8_t reg_num, uint8_t* data); // writes to reg
 
 uint8_t* read_reg(mesh_data_t* mesh_data, uint8_t reg_num);
-
-/** Add a register to the broadcast queue to be broadcast
- *  Returns -1 on failure, 0 on success 
- */
-int8_t add_to_broadcast_queue(mesh_data_t* mesh_data, uint8_t reg_num);
-
-/** Add a register to the head of the queue
- *  Returns -1 if failure, 0 if success
- */
-int8_t broadcast_next(mesh_data_t* mesh_data, uint8_t reg_num);
-
-uint8_t* assemble_message(uint8_t* dest, mesh_data_t* mesh_data, mesh_message_t* mesh_message);
-
-uint8_t message_is_mine(uint8_t* message, )
 
 #endif
 

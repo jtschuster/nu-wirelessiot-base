@@ -2,7 +2,7 @@
 //
 // Receives BLE advertisements
 
-#define DEVICE_ID 0xBEEF
+#define DEVICE_ID 0xCAFE
 #define DEBUG__
 
 #include "app_timer.h"
@@ -74,18 +74,14 @@ void timer0_timeout_handler(void* p_context)
 {
     UNUSED_PARAMETER(p_context);
     static uint8_t count = 0;
-    static uint8_t rev[12] = {0}; 
-    // for (uint8_t i = 0; i < 12; i += 3) {
-    //     uint8_t reg_num = (1 + (i)) % 12;
-    //     mesh_read_reg(reg2data, reg_num);
-    //     reg2data[23] = reg2data[23] + 1;
-    //     mesh_write_reg(reg_num, reg2data, ++(rev[reg_num]));
-    // }
+    static uint8_t rev[12] = { 0 };
+    uint8_t reg_num = (2 + (3 * count)) % 12;
+    if (count == 0) {
+        mesh_read_reg(reg2data, reg_num);
+        reg2data[23] = reg2data[23] + 1;
+        mesh_write_reg(reg_num, reg2data, ++(rev[reg_num]));
+    }
 
-    uint8_t reg_num = 1;
-    mesh_read_reg(reg2data, reg_num);
-    reg2data[23] = reg2data[23] + 1;
-    mesh_write_reg(reg_num, reg2data, ++(rev[reg_num]));
     count++;
     set_leds();
 }
@@ -101,10 +97,7 @@ int main(void)
     // Start Advertising
     mesh_init();
     timers_init();
-    set_leds();
-    uint16_t app_timer_delay = 2 * 1 * (MESH_MESSAGE_TIMER_TIMEOUT + 50);
-    timer0_start(app_timer_delay);
-    printf("writing my reg every %d\n", app_timer_delay);
+    timer0_start(5000);
     // simple_ble_adv_raw(ble_data, 31);
     // advertising_start();
 
